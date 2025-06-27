@@ -10,3 +10,9 @@ after_success:
   - docker build -t arjunkhadka/multi-server ./server
   - docker build -t arjunkhadka/multi-worker ./worker
   - docker build -t arjunkhadka/multi-nginx ./nginx
+# take those images and push them to docker hub
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  - docker push arjunkhadka/multi-client
+  - docker push arjunkhadka/multi-server
+  - docker push arjunkhadka/multi-worker
+  - docker push arjunkhadka/multi-nginx
