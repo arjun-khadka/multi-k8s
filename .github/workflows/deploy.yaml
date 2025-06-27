@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3     
       - run: docker build -t arjunkhadka/react-test -f ./client/Dockerfile.dev ./client
-      - run: docker run -e CI=true rallycoding/react-test npm test
+      - run: docker run -e CI=true arjunkhadka/react-test npm test
 
       - run: docker build -t arjunkhadka/multi-client ./client
       - run: docker build -t arjunkhadka/multi-nginx ./nginx
