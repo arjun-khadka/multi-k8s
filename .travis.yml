@@ -1,0 +1,12 @@
+sudo: required
+services:
+  - docker
+before_install:
+  - docker build -t arjunkhadka/react-test -f ./client/Dockerfile.dev ./client
+script:
+  - docker run -e CI=true arjunkhadka/react-test npm test
+after_success:
+  - docker build -t arjunkhadka/multi-client ./client
+  - docker build -t arjunkhadka/multi-server ./server
+  - docker build -t arjunkhadka/multi-worker ./worker
+  - docker build -t arjunkhadka/multi-nginx ./nginx
