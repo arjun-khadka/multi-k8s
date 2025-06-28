@@ -21,3 +21,19 @@ jobs:
       - run: docker push arjunkhadka5docker/multi-nginx
       - run: docker push arjunkhadka5docker/multi-server
       - run: docker push arjunkhadka5docker/multi-worker
+
+      - name: Generate deployment package
+        run: zip -r deploy.zip . -x '*.git*'
+
+      - name: Deploy to AWS Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v20
+        with:
+          application_name: multi-docker
+          environment_name: Multi-docker-env
+          version_label: ${{ github.sha }}
+          region: us-east-2
+          existing_bucket_name: elasticbeanstalk-us-east-2-399404565736
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          deployment_package: deploy.zip
+          
