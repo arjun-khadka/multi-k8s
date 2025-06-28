@@ -23,7 +23,7 @@ jobs:
       - run: docker push arjunkhadka5docker/multi-worker
 
       - name: Generate deployment package
-        run: zip -r deploy.zip docker-compose.yml
+        run: zip deploy.zip docker-compose.yml
 
       - name: Deploy to AWS Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v20
