@@ -18,7 +18,7 @@ jobs:
       - run: docker build -t arjunkhadka5docker/multi-worker ./worker
       - run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
       - run: docker push arjunkhadka5docker/multi-client
-      - run: docker push arjunkhadka5docker/multi-nginx
+      # - run: docker push arjunkhadka5docker/multi-nginx
       - run: docker push arjunkhadka5docker/multi-server
       - run: docker push arjunkhadka5docker/multi-worker
 
