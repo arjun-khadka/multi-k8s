@@ -19,10 +19,6 @@ const pgClient = new Pool({
   password: keys.pgPassword,
   port: keys.pgPort,
 
-  ssl:
-    process.env.NODE_ENV !== 'production'
-      ? false
-      : { rejectUnauthorized: false },
 });
 
 pgClient.on('connect', (client) => {
@@ -37,6 +33,7 @@ const redisClient = redis.createClient({
   host: keys.redisHost,
   port: keys.redisPort,
   retry_strategy: () => 1000,
+
 });
 const redisPublisher = redisClient.duplicate();
 
