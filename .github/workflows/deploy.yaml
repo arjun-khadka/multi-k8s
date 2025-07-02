@@ -1,39 +1,61 @@
-name: Deploy MultiDocker
+name: Deploy MultiK8s
 on:
   push:
     branches:
-      - main # check your repo, your default branch might be master!
+      - main
+env:
+  SHA: $(git rev-parse HEAD)
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3     
-      - run: docker build -t arjunkhadka5docker/react-test -f ./client/Dockerfile.dev ./client
-      - run: docker run -e CI=true arjunkhadka5docker/react-test npm test
+      - uses: actions/checkout@v3
+      - name: Test
+        run: |-
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -t arjunkhadka5docker/react-test -f ./client/Dockerfile.dev ./client
+          docker run -e CI=true arjunkhadka5docker/react-test npm test
 
-      - run: docker build -t arjunkhadka5docker/multi-client ./client
-      - run: docker build -t arjunkhadka5docker/multi-nginx ./nginx
-      - run: docker build -t arjunkhadka5docker/multi-server ./server
-      - run: docker build -t arjunkhadka5docker/multi-worker ./worker
-      - run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-      - run: docker push arjunkhadka5docker/multi-client
-      - run: docker push arjunkhadka5docker/multi-nginx
-      - run: docker push arjunkhadka5docker/multi-server
-      - run: docker push arjunkhadka5docker/multi-worker
-
-      - name: Generate deployment package
-        run: zip deploy.zip docker-compose.yml
-
-      - name: Deploy to AWS Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v20
+      - name: Set Service Key
+        uses: "google-github-actions/auth@v0"
         with:
-          application_name: multi-docker
-          environment_name: Multi-docker-env
-          version_label: ${{ github.sha }}
-          region: us-east-2
-          existing_bucket_name: elasticbeanstalk-us-east-2-399404565736
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
-          deployment_package: deploy.zip
-          
+          credentials_json: "${{ secrets.GKE_SA_KEY }}"
+
+      - name: Set Project
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: multi-k8s-464611          
+
+      - name: Auth
+        run: |-
+          gcloud --quiet auth configure-docker
+
+      - name: Get Credentials
+        uses: google-github-actions/get-gke-credentials@v0
+        with:
+          cluster_name: multi-cluster
+          location: us-central1-a
+
+      - name: Build
+        run: |-
+          docker build -t arjunkhadka5docker/multi-client:latest -t arjunkhadka5docker/multi-client:${{ env.SHA }} -f ./client/Dockerfile ./client
+          docker build -t arjunkhadka5docker/multi-server:latest -t arjunkhadka5docker/multi-server:${{ env.SHA }} -f ./server/Dockerfile ./server
+          docker build -t arjunkhadka5docker/multi-worker:latest -t arjunkhadka5docker/multi-worker:${{ env.SHA }} -f ./worker/Dockerfile ./worker
+
+      - name: Push
+        run: |-
+          docker push arjunkhadka5docker/multi-client:latest
+          docker push arjunkhadka5docker/multi-server:latest
+          docker push arjunkhadka5docker/multi-worker:latest
+
+          docker push arjunkhadka5docker/multi-client:${{ env.SHA }}
+          docker push arjunkhadka5docker/multi-server:${{ env.SHA }}
+          docker push arjunkhadka5docker/multi-worker:${{ env.SHA }}
+
+      - name: Apply
+        run: |-
+          kubectl apply -f k8s
+          kubectl set image deployments/server-deployment server=arjunkhadka5docker/multi-server:${{ env.SHA }}
+          kubectl set image deployments/client-deployment client=arjunkhadka5docker/multi-client:${{ env.SHA }}
+          kubectl set image deployments/worker-deployment worker=arjunkhadka5docker/multi-worker:${{ env.SHA }}

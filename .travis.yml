@@ -1,0 +1,26 @@
+sudo: required
+dist: focal
+services:
+  - docker
+env:
+  global:
+    - SHA=$(git rev-parse HEAD)
+    - CLOUDSDK_CORE_DISABLE_PROMPT=1
+before_install:
+  - curl https://sdk.cloud.google.com | bash > /dev/null;
+  - source $HOME/google-cloud-sdk/path.bash.inc
+  - gcloud components install kubectl
+  - gcloud auth activate-service-account --key-file service-account.json
+  - gcloud config set project multi-k8s-464611
+  - gcloud config set compute/zone us-central1-a
+  - gcloud container clusters get-credentials multi-cluster
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t arjunkhadka5docker/react-test -f ./client/Dockerfile.dev ./client
+script:
+  - docker eun -e CI=true arjunkhadka5docker/react-test npm test
+deploy:
+  provider: script
+  script: bash ./deploy.sh
+  on:
+    branch: main
+  
